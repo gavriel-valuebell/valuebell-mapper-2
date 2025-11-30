@@ -8,9 +8,7 @@ import axios from 'axios'
 import DownloadButtons from '../DownloadButtons/DownloadButtons'
 import ProcessingView from './ProcessingView'
 import styles from './TranscribeForm.module.scss'
-
-const TRANSCRIBE_WEBHOOK = import.meta.env.VITE_TRANSCRIBE_WEBHOOK_URL
-const TRANSCRIBE_STATUS_WEBHOOK = import.meta.env.VITE_TRANSCRIBE_STATUS_URL
+import { TRANSCRIBE_WEBHOOK, TRANSCRIBE_STATUS_WEBHOOK } from '../../constants'
 const POLL_INTERVAL_MS = 10_000
 const JOB_TIMEOUT_MS = 45 * 60 * 1000
 
