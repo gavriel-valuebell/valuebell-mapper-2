@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Formik, Form as FormikForm, Field } from 'formik'
 import type { FormikHelpers } from 'formik'
 import { Input, Button, message, Form } from 'antd'
-import { LinkOutlined, FileTextOutlined } from '@ant-design/icons'
+import { LinkOutlined, FileTextOutlined, MailOutlined } from '@ant-design/icons'
 import * as Yup from 'yup'
 import axios from 'axios'
 import DownloadButtons from '../DownloadButtons/DownloadButtons'
@@ -19,6 +19,7 @@ const GIF_URLS = Object.values(gifsGlob).map((mod) => mod.default)
 interface FormValues {
   driveVideoUrl: string
   episodeName: string
+  email: string
 }
 
 const validationSchema = Yup.object({
@@ -27,6 +28,13 @@ const validationSchema = Yup.object({
     .required('Drive video URL is required'),
   episodeName: Yup.string()
     .required('Episode name is required')
+    .matches(
+      /^[a-zA-Z0-9\s\-_]+$/,
+      'Episode name can only contain letters, numbers, spaces, hyphens, and underscores'
+    ),
+  email: Yup.string()
+    .email('Please enter a valid email')
+    .required('Email is required')
 })
 
 interface StatusRow {
@@ -221,7 +229,7 @@ function TranscribeForm() {
             <p>Enter the details below to begin the mapping process.</p>
           </div>
           <Formik
-            initialValues={{ driveVideoUrl: '', episodeName: '' }}
+            initialValues={{ driveVideoUrl: '', episodeName: '', email: '' }}
             validationSchema={validationSchema}
             onSubmit={handleSubmit}
           >
@@ -265,6 +273,28 @@ function TranscribeForm() {
                         value={values.episodeName}
                         onChange={(e) => setFieldValue('episodeName', e.target.value)}
                         onBlur={handleBlur('episodeName')}
+                        disabled={loading}
+                      />
+                    )}
+                  </Field>
+                </Form.Item>
+
+                <Form.Item
+                  label={<span className={styles.label}>Email</span>}
+                  validateStatus={touched.email && errors.email ? 'error' : ''}
+                  help={touched.email && errors.email}
+                  colon={false}
+                  layout="vertical"
+                >
+                  <Field name="email">
+                    {() => (
+                      <Input
+                        size="large"
+                        prefix={<MailOutlined className={styles.inputIcon} />}
+                        placeholder="your.email@example.com"
+                        value={values.email}
+                        onChange={(e) => setFieldValue('email', e.target.value)}
+                        onBlur={handleBlur('email')}
                         disabled={loading}
                       />
                     )}
