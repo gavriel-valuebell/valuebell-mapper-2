@@ -17,8 +17,10 @@ function App() {
     >
       <div className="app-container">
         <header className="app-header">
-          <img src={valubellIcon} className="app-logo" alt="Valuebell Logo" />
+          <a href="https://www.valuebell.studio/" target="_blank" rel="noopener noreferrer" className="app-header">
+            <img src={valubellIcon} className="app-logo" alt="Valuebell Logo" />
           <h1 className="app-title">Valuebell Mapper</h1>
+          </a>
         </header>
         <main className="app-main">
           <TranscribeForm />
