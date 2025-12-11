@@ -76,6 +76,14 @@
 }
 
 /* Embed mode adjustments - when loaded in iframe with ?embed=true */
+body:has(.app-container.embed-mode) {
+  background-color: #000;
+}
+
+#root:has(.app-container.embed-mode) {
+  background-color: #000;
+}
+
 .app-container.embed-mode {
   background-color: #000;
   justify-content: flex-start;
