@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Badge, Segmented, Tag, message } from 'antd'
 import { FileDoneOutlined, FileTextOutlined } from '@ant-design/icons'
 import MapViewer from '../MapViewer/MapViewer'
@@ -37,7 +37,7 @@ function PreviewSwitcher({ transcriptUrl = '', mappingContent = '' }: PreviewSwi
       value: 'mapping',
       icon: <FileDoneOutlined />
     }
-  ].filter(Boolean) as { label: string; value: ActiveView; icon: JSX.Element }[]
+  ].filter(Boolean) as { label: string; value: ActiveView; icon: React.ReactNode }[]
   const currentView = useMemo(() => {
     if (activeView && options.some((opt) => opt.value === activeView)) return activeView
     if (hasMapping) return 'mapping'
