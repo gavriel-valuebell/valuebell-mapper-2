@@ -21,7 +21,7 @@ function App() {
           <a href="https://www.valuebell.studio/" target="_blank" rel="noopener noreferrer">
             <img src={valubellIcon} className="app-logo" alt="Valuebell Logo" />
           </a>
-          <h1 className="app-title">Valuebell Mapper</h1>
+          <h1 className="app-title">Valuebot</h1>
         </header>
         <main className="app-main">
           <TranscribeForm />
