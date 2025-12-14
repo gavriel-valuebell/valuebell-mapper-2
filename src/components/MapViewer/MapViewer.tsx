@@ -1,40 +1,24 @@
-import { useEffect, useMemo, useState, type HTMLAttributes, type ReactNode } from 'react'
+import { useMemo, type HTMLAttributes, type ReactNode } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { Button, Segmented, Tag, Tooltip, message } from 'antd'
+import { Button, Tooltip } from 'antd'
 import { CopyOutlined, FileDoneOutlined } from '@ant-design/icons'
+import { copyToClipboard } from '../../utils/textUtils'
+import { useTextDirection } from '../../hooks/useTextDirection'
+import DirectionControls from '../DirectionControls/DirectionControls'
 import styles from './MapViewer.module.scss'
 
 interface MapViewerProps {
   content: string
 }
 
-const RTL_CHARS_REGEX = /[\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/
-
-const detectIsRtl = (text: string) => RTL_CHARS_REGEX.test(text)
-
 function MapViewer({ content }: MapViewerProps) {
-  const [detectedRtl, setDetectedRtl] = useState(false)
-  const [directionMode, setDirectionMode] = useState<'auto' | 'ltr' | 'rtl'>('auto')
-
-  useEffect(() => {
-    setDetectedRtl(detectIsRtl(content))
-  }, [content])
+  const { directionMode, setDirectionMode, resolvedDirection, directionLabel } =
+    useTextDirection({ text: content })
 
   const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(content)
-      message.success('Mapping copied to clipboard')
-    } catch {
-      message.error('Failed to copy mapping')
-    }
+    await copyToClipboard(content, 'Mapping copied to clipboard')
   }
-
-  const resolvedDirection = directionMode === 'auto' ? (detectedRtl ? 'rtl' : 'ltr') : directionMode
-  const directionLabel =
-    directionMode === 'auto'
-      ? `Auto (${detectedRtl ? 'RTL' : 'LTR'})`
-      : `Set to ${directionMode.toUpperCase()}`
 
   const rendered = useMemo(
     () => (
@@ -88,19 +72,12 @@ function MapViewer({ content }: MapViewerProps) {
       </div>
 
       <div className={styles.shell} dir={resolvedDirection}>
-        <div className={styles.metaRow}>
-          <Tag color={resolvedDirection === 'rtl' ? 'volcano' : 'blue'}>{directionLabel}</Tag>
-          <Segmented
-            size="small"
-            value={directionMode}
-            onChange={(value) => setDirectionMode(value as 'auto' | 'ltr' | 'rtl')}
-            options={[
-              { label: 'Auto', value: 'auto' },
-              { label: 'LTR', value: 'ltr' },
-              { label: 'RTL', value: 'rtl' }
-            ]}
-          />
-        </div>
+        <DirectionControls
+          directionMode={directionMode}
+          onDirectionChange={setDirectionMode}
+          resolvedDirection={resolvedDirection}
+          directionLabel={directionLabel}
+        />
         <div className={styles.markdownBody}>{rendered}</div>
       </div>
     </section>

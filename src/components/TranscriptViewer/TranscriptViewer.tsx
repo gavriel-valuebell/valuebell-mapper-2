@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Alert, Button, Segmented, Spin, Tag, message } from 'antd'
+import { Alert, Button, Spin } from 'antd'
 import { CopyOutlined, ReloadOutlined, FileTextOutlined } from '@ant-design/icons'
 import { extractRawText } from 'mammoth/mammoth.browser'
+import { copyToClipboard } from '../../utils/textUtils'
+import { useTextDirection } from '../../hooks/useTextDirection'
+import DirectionControls from '../DirectionControls/DirectionControls'
 import styles from './TranscriptViewer.module.scss'
 
 interface TranscriptViewerProps {
@@ -9,10 +12,6 @@ interface TranscriptViewerProps {
 }
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error'
-
-const RTL_CHARS_REGEX = /[\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/
-
-const detectIsRtl = (text: string) => RTL_CHARS_REGEX.test(text)
 
 const toDocxExportUrl = (url: string) => {
   if (!url) return ''
@@ -25,9 +24,10 @@ function TranscriptViewer({ transcriptUrl }: TranscriptViewerProps) {
   const [transcriptText, setTranscriptText] = useState('')
   const [loadState, setLoadState] = useState<LoadState>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [detectedRtl, setDetectedRtl] = useState(false)
-  const [directionMode, setDirectionMode] = useState<'auto' | 'ltr' | 'rtl'>('auto')
   const abortControllerRef = useRef<AbortController | null>(null)
+
+  const { directionMode, setDirectionMode, resolvedDirection, directionLabel } =
+    useTextDirection({ text: transcriptText })
 
   const fetchTranscript = useCallback(async () => {
     if (!transcriptUrl) return
@@ -56,7 +56,6 @@ function TranscriptViewer({ transcriptUrl }: TranscriptViewerProps) {
         .trim()
 
       setTranscriptText(cleaned)
-      setDetectedRtl(detectIsRtl(cleaned))
       setLoadState('ready')
     } catch (error: unknown) {
       if (controller.signal.aborted) return
@@ -76,21 +75,10 @@ function TranscriptViewer({ transcriptUrl }: TranscriptViewerProps) {
 
   const handleCopy = async () => {
     if (!transcriptText) return
-    try {
-      await navigator.clipboard.writeText(transcriptText)
-      message.success('Transcript copied to clipboard')
-    } catch {
-      message.error('Failed to copy transcript')
-    }
+    await copyToClipboard(transcriptText, 'Transcript copied to clipboard')
   }
 
   const showCopyButton = loadState === 'ready' && Boolean(transcriptText)
-  const resolvedDirection =
-    directionMode === 'auto' ? (detectedRtl ? 'rtl' : 'ltr') : directionMode
-  const directionLabel =
-    directionMode === 'auto'
-      ? `Auto (${detectedRtl ? 'RTL' : 'LTR'})`
-      : `Set to ${directionMode.toUpperCase()}`
 
   return (
     <section className={styles.viewerCard} aria-live="polite">
@@ -148,19 +136,12 @@ function TranscriptViewer({ transcriptUrl }: TranscriptViewerProps) {
 
         {loadState === 'ready' && (
           <div className={styles.transcriptShell} dir={resolvedDirection}>
-            <div className={styles.metaRow}>
-              <Tag color={resolvedDirection === 'rtl' ? 'volcano' : 'blue'}>{directionLabel}</Tag>
-              <Segmented
-                size="small"
-                value={directionMode}
-                onChange={(value) => setDirectionMode(value as 'auto' | 'ltr' | 'rtl')}
-                options={[
-                  { label: 'Auto', value: 'auto' },
-                  { label: 'LTR', value: 'ltr' },
-                  { label: 'RTL', value: 'rtl' }
-                ]}
-              />
-            </div>
+            <DirectionControls
+              directionMode={directionMode}
+              onDirectionChange={setDirectionMode}
+              resolvedDirection={resolvedDirection}
+              directionLabel={directionLabel}
+            />
             {transcriptText ? (
               <div className={styles.transcriptText}>{transcriptText}</div>
             ) : (
