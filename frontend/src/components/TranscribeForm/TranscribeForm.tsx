@@ -9,7 +9,10 @@ import DocumentButtons from '../DocumentButtons/DocumentButtons'
 import ProcessingView from './ProcessingView'
 import PreviewSwitcher from '../PreviewSwitcher/PreviewSwitcher'
 import styles from './TranscribeForm.module.scss'
-import { TRANSCRIBE_WEBHOOK, TRANSCRIBE_STATUS_WEBHOOK } from '../../constants'
+import {API_BASE_URL } from '../../constants'
+import { useAuth } from '../../contexts/AuthContext'
+import { getIdToken } from '../../utils/authUtils'
+
 const POLL_INTERVAL_MS = 10_000
 const JOB_TIMEOUT_MS = 45 * 60 * 1000
 
@@ -57,6 +60,7 @@ interface StatusRow {
 }
 
 function TranscribeForm() {
+  const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [jobId, setJobId] = useState<string | null>(null)
   const [statusRow, setStatusRow] = useState<StatusRow | null>(null)
@@ -116,15 +120,25 @@ function TranscribeForm() {
 
   const fetchStatus = useCallback(
     async (id: string, opts?: { initial?: boolean }) => {
-      if (!TRANSCRIBE_STATUS_WEBHOOK) {
+      if (!API_BASE_URL) {
         setErrorMessage('Missing status endpoint configuration')
         stopPolling()
         return
       }
 
       try {
-        const response = await axios.get(TRANSCRIBE_STATUS_WEBHOOK, {
-          params: { jobId: id }
+        // Get fresh ID token (silent errors during polling)
+        const token = await getIdToken(user, false)
+        if (!token) {
+          // Silent failure - polling will retry
+          return
+        }
+
+        const response = await axios.get(`${API_BASE_URL}/valuebell-mapper/check-status`, {
+          params: { jobId: id },
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
         })
 
         const rows = Array.isArray(response.data) ? response.data : [response.data]
@@ -199,11 +213,21 @@ function TranscribeForm() {
     clearTimers()
 
     try {
-      if (!TRANSCRIBE_WEBHOOK) {
+      if (!API_BASE_URL) {
         throw new Error('Missing submit webhook configuration')
       }
 
-      const response = await axios.post(TRANSCRIBE_WEBHOOK, values)
+      // Get fresh ID token for submission
+      const token = await getIdToken(user, true)
+      if (!token) {
+        throw new Error('Failed to authenticate. Please try signing in again.')
+      }
+
+      const response = await axios.post(`${API_BASE_URL}/valuebell-mapper/trigger`, values, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
       const returnedJobId = response.data?.jobID ?? response.data?.jobId
 
       if (!returnedJobId) {
@@ -257,7 +281,11 @@ function TranscribeForm() {
               <p>Enter the details below to begin the mapping process.</p>
             </div>
             <Formik
-              initialValues={{ driveVideoUrl: '', episodeName: '', email: '' }}
+              initialValues={{
+                driveVideoUrl: '',
+                episodeName: '',
+                email: user?.email || ''
+              }}
               validationSchema={validationSchema}
               onSubmit={handleSubmit}
             >
