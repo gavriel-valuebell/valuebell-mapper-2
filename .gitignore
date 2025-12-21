@@ -11,6 +11,12 @@ node_modules
 dist
 dist-ssr
 *.local
+coverage
+
+# Firebase
+.firebase/
+firebase-debug.log
+.firebaserc
 
 # Environment variables
 .env
